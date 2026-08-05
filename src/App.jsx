@@ -527,17 +527,17 @@ export default function Portfolio() {
       }}>
         <div className="hero-glow" style={{ background: theme.accent, top: "10%", [isRtl ? "right" : "left"]: "-10%" }} />
         <div className="hero-glow" style={{ background: "#6366f1", bottom: "5%", [isRtl ? "left" : "right"]: "-5%" }} />
-        <div style={{ maxWidth: 720, textAlign: "center", position: "relative", zIndex: 1 }}>
+        <div style={{ maxWidth: 900, textAlign: "center", position: "relative", zIndex: 1 }}>
           <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85rem", color: theme.accent, marginBottom: 16, letterSpacing: "0.05em" }}>
             {i.heroGreet}
           </p>
-          <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.03em", marginBottom: 16 }}>
+          <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.03em", marginBottom: 16, background: mode === "dark" ? "linear-gradient(135deg, #e0e7ff 0%, #818cf8 100%)" : "linear-gradient(135deg, #1e1b4b 0%, #6366f1 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
             {i.heroName}
           </h1>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(1rem, 2.5vw, 1.3rem)", color: theme.textMuted, marginBottom: 32, minHeight: "1.6em" }}>
             {typed}<span className="cursor-blink" />
           </div>
-          <p style={{ fontSize: "1.05rem", lineHeight: 1.7, color: theme.textDim, maxWidth: 540, margin: "0 auto 40px" }}>
+          <p style={{ fontSize: "1.05rem", lineHeight: 1.7, color: theme.textDim, maxWidth: 680, margin: "0 auto 40px" }}>
             {i.heroDesc}
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
@@ -552,7 +552,7 @@ export default function Portfolio() {
 
       {/* ─── ABOUT ─── */}
       <Section id="about">
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "80px 24px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px" }}>
           <SectionLabel text={i.aboutLabel} theme={theme} />
           <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 20, letterSpacing: "-0.02em", whiteSpace: "pre-line" }}>{i.aboutTitle}</h2>
           <div style={{ color: theme.textMuted, lineHeight: 1.8, fontSize: "1rem", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -571,7 +571,7 @@ export default function Portfolio() {
 
       {/* ─── EXPERIENCE ─── */}
       <Section id="experience">
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "80px 24px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px" }}>
           <SectionLabel text={i.expLabel} theme={theme} />
           <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em" }}>{i.expTitle}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -604,7 +604,7 @@ export default function Portfolio() {
 
       {/* ─── SKILLS ─── */}
       <Section id="skills">
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "80px 24px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px" }}>
           <SectionLabel text={i.skillsLabel} theme={theme} />
           <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em" }}>{i.skillsTitle}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
@@ -622,7 +622,7 @@ export default function Portfolio() {
 
       {/* ─── PROJECTS ─── */}
       <Section id="projects">
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "80px 24px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px" }}>
           <SectionLabel text={i.projectsLabel} theme={theme} />
           <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em" }}>{i.projectsTitle}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -647,7 +647,7 @@ export default function Portfolio() {
 
       {/* ─── EDUCATION ─── */}
       <Section id="education">
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "80px 24px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px" }}>
           <SectionLabel text={i.eduLabel} theme={theme} />
           <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em" }}>{i.eduTitle}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -665,11 +665,11 @@ export default function Portfolio() {
 
       {/* ─── CONTACT ─── */}
       <Section id="contact">
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "80px 24px 120px", textAlign: "center" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px 120px", textAlign: "center" }}>
           <SectionLabel text={i.contactLabel} theme={theme} />
           <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 16, letterSpacing: "-0.02em" }}>{i.contactTitle}</h2>
-          <p style={{ color: theme.textDim, fontSize: "1rem", lineHeight: 1.7, maxWidth: 480, margin: "0 auto 36px" }}>{i.contactDesc}</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, maxWidth: 560, margin: "0 auto 36px", textAlign: isRtl ? "right" : "left" }}>
+          <p style={{ color: theme.textDim, fontSize: "1rem", lineHeight: 1.7, maxWidth: 620, margin: "0 auto 36px" }}>{i.contactDesc}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, maxWidth: 700, margin: "0 auto 36px", textAlign: isRtl ? "right" : "left" }}>
             {[
               { label: i.emailLabel, value: "ilyeslabidi2501@gmail.com", href: "mailto:ilyeslabidi2501@gmail.com", icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
               { label: i.phoneLabel, value: "+216 52 822 252", href: "tel:+21652822252", icon: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" },
