@@ -531,7 +531,7 @@ export default function Portfolio() {
           <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.85rem", color: theme.accent, marginBottom: 16, letterSpacing: "0.05em" }}>
             {i.heroGreet}
           </p>
-          <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.03em", marginBottom: 16, background: mode === "dark" ? "linear-gradient(135deg, #e0e7ff 0%, #818cf8 100%)" : "linear-gradient(135deg, #1e1b4b 0%, #6366f1 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+          <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.03em", marginBottom: 16, color: mode === "dark" ? "#e0e7ff" : "#312e81" }}>
             {i.heroName}
           </h1>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "clamp(1rem, 2.5vw, 1.3rem)", color: theme.textMuted, marginBottom: 32, minHeight: "1.6em" }}>
