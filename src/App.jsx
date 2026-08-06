@@ -300,13 +300,159 @@ function useInView(threshold = 0.15) {
   return [ref, visible];
 }
 
+function useCounter(target, duration, shouldStart) {
+  const [count, setCount] = useState(0);
+  const numVal = parseInt(target);
+  const hasPlus = typeof target === "string" && target.includes("+");
+  useEffect(() => {
+    if (!shouldStart || isNaN(numVal)) return;
+    let start = null;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / duration, 1);
+      setCount(Math.floor(progress * numVal));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [shouldStart, numVal, duration]);
+  if (isNaN(numVal)) return target;
+  return hasPlus ? count + "+" : String(count);
+}
+
+// ─── CONSTELLATION BACKGROUND ───
+function ConstellationBg({ theme, mode }) {
+  const canvasRef = useRef(null);
+  const mouseRef = useRef({ x: -1000, y: -1000 });
+  const nodesRef = useRef([]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let animId;
+    let w, h;
+
+    const resize = () => {
+      w = canvas.width = canvas.offsetWidth;
+      h = canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const handleMouse = (e) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener("mousemove", handleMouse);
+
+    // Create nodes
+    const count = 60;
+    if (nodesRef.current.length === 0) {
+      for (let i = 0; i < count; i++) {
+        nodesRef.current.push({
+          x: Math.random() * 2000, y: Math.random() * 2000,
+          vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+          r: Math.random() * 2 + 1,
+        });
+      }
+    }
+    const nodes = nodesRef.current;
+
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h);
+      const accent = mode === "dark" ? "129,140,248" : "79,70,229";
+      const isLight = mode === "light";
+      const mouse = mouseRef.current;
+
+      // Update positions
+      for (const n of nodes) {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < 0 || n.x > w) n.vx *= -1;
+        if (n.y < 0 || n.y > h) n.vy *= -1;
+
+        // Mouse attraction
+        const dx = mouse.x - n.x;
+        const dy = mouse.y - n.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 200 && dist > 0) {
+          n.x += dx * 0.002;
+          n.y += dy * 0.002;
+        }
+      }
+
+      // Draw connections
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 150) {
+            const opacity = (1 - dist / 150) * (isLight ? 0.35 : 0.15);
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(${accent},${opacity})`;
+            ctx.lineWidth = isLight ? 0.8 : 0.5;
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw mouse connections
+      for (const n of nodes) {
+        const dx = mouse.x - n.x;
+        const dy = mouse.y - n.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 200) {
+          const opacity = (1 - dist / 200) * (isLight ? 0.6 : 0.3);
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(${accent},${opacity})`;
+          ctx.lineWidth = isLight ? 1.2 : 0.8;
+          ctx.moveTo(mouse.x, mouse.y);
+          ctx.lineTo(n.x, n.y);
+          ctx.stroke();
+        }
+      }
+
+      // Draw nodes
+      for (const n of nodes) {
+        const dx = mouse.x - n.x;
+        const dy = mouse.y - n.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const glow = dist < 200 ? 1.5 : 1;
+
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r * glow, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${accent},${dist < 200 ? (isLight ? 0.8 : 0.6) : (isLight ? 0.45 : 0.25)})`;
+        ctx.fill();
+      }
+
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", handleMouse);
+    };
+  }, [mode]);
+
+  return (
+    <canvas ref={canvasRef} style={{
+      position: "fixed", inset: 0, width: "100%", height: "100%",
+      pointerEvents: "none", zIndex: 0,
+    }} />
+  );
+}
+
 // ─── COMPONENTS ───
 function Section({ id, children, className = "" }) {
   const [ref, visible] = useInView();
   return (
     <section id={id} ref={ref} className={className} style={{
       opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(32px)",
-      transition: "opacity 0.7s ease, transform 0.7s ease",
+      transition: "opacity 0.7s ease, transform 0.7s ease", position: "relative", zIndex: 1,
     }}>{children}</section>
   );
 }
@@ -316,6 +462,41 @@ function SectionLabel({ text, theme }) {
     fontFamily: "'SF Mono', 'Fira Code', monospace", fontSize: "0.75rem",
     letterSpacing: "0.15em", textTransform: "uppercase", color: theme.accent, marginBottom: "0.75rem",
   }}>{text}</p>;
+}
+
+function AnimatedSkills({ items, theme }) {
+  const [ref, visible] = useInView();
+  return (
+    <div ref={ref} style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      {items.map((s, si) => (
+        <span key={s} className="skill-chip" style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0) scale(1)" : "translateY(12px) scale(0.9)",
+          transition: "all 0.4s ease " + (si * 60) + "ms",
+        }}>{s}</span>
+      ))}
+    </div>
+  );
+}
+
+function AnimatedStats({ stats, theme }) {
+  const [ref, visible] = useInView();
+  return (
+    <div ref={ref} style={{
+      display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+      gap: 16, marginTop: 36, paddingTop: 36, borderTop: "1px solid " + theme.border,
+    }}>
+      {stats.map((s, idx) => {
+        const val = useCounter(s.num, 1500, visible);
+        return (
+          <div key={idx} style={{ textAlign: "center" }}>
+            <p style={{ fontSize: "1.6rem", fontWeight: 700, color: theme.accent, fontFamily: "'JetBrains Mono', monospace" }}>{val}</p>
+            <p style={{ fontSize: "0.78rem", color: theme.textFaint, marginTop: 4 }}>{s.label}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ─── MAIN ───
@@ -337,6 +518,18 @@ export default function Portfolio() {
   }, []);
 
   useEffect(() => {
+    const handleMouse = (e) => {
+      document.querySelectorAll('.card').forEach(card => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', (e.clientX - rect.left) + 'px');
+        card.style.setProperty('--mouse-y', (e.clientY - rect.top) + 'px');
+      });
+    };
+    window.addEventListener('mousemove', handleMouse);
+    return () => window.removeEventListener('mousemove', handleMouse);
+  }, []);
+
+  useEffect(() => {
     const close = () => setLangMenuOpen(false);
     if (langMenuOpen) document.addEventListener("click", close);
     return () => document.removeEventListener("click", close);
@@ -355,6 +548,14 @@ export default function Portfolio() {
       background: theme.bg, color: theme.text, minHeight: "100vh", overflowX: "hidden",
       transition: "background 0.4s, color 0.4s",
     }}>
+      <ConstellationBg theme={theme} mode={mode} />
+      <div style={{
+        position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
+        background: mode === "dark"
+          ? "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(129,140,248,0.12), transparent), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(99,102,241,0.08), transparent), radial-gradient(ellipse 50% 30% at 10% 60%, rgba(168,85,247,0.06), transparent)"
+          : "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(79,70,229,0.12), transparent), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(129,140,248,0.1), transparent), radial-gradient(ellipse 50% 30% at 10% 60%, rgba(168,85,247,0.06), transparent)",
+        transition: "background 0.4s",
+      }} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -373,15 +574,22 @@ export default function Portfolio() {
         .skill-chip {
           padding: 6px 14px; border-radius: 6px; font-size: 0.82rem;
           background: ${theme.bgChip}; border: 1px solid ${theme.chipBorder};
-          color: ${theme.textMuted}; transition: all 0.2s; white-space: nowrap;
+          color: ${theme.textMuted}; transition: all 0.08s ease-out; white-space: nowrap; cursor: default;
         }
-        .skill-chip:hover { border-color: ${theme.accent}; color: ${theme.text}; transform: translateY(-1px); }
+        .skill-chip:hover { border-color: ${theme.accent}; color: ${theme.text}; transform: translateY(-2px) scale(1.05); }
 
         .card {
           background: ${theme.bgCard}; border: 1px solid ${theme.border};
           border-radius: 12px; padding: 28px; transition: all 0.3s ease; cursor: default;
+          position: relative; overflow: hidden;
+        }
+        .card::after {
+          content: ''; position: absolute; inset: 0; border-radius: 12px;
+          opacity: 0; transition: opacity 0.4s; pointer-events: none;
+          background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(129,140,248,0.06), transparent 40%);
         }
         .card:hover { border-color: ${theme.borderHover}; transform: translateY(-3px); box-shadow: 0 12px 40px ${theme.shadow}; }
+        .card:hover::after { opacity: 1; }
 
         .cursor-blink {
           display: inline-block; width: 2px; height: 1.1em; background: ${theme.accent};
@@ -397,14 +605,16 @@ export default function Portfolio() {
           font-family: inherit;
         }
         .cta-primary { background: ${theme.accent}; color: ${mode === "dark" ? "#09090b" : "#fff"}; }
-        .cta-primary:hover { background: ${theme.accentHover}; transform: translateY(-1px); }
+        .cta-primary:hover { background: ${theme.accentHover}; transform: translateY(-2px); box-shadow: 0 4px 20px ${theme.accent}40; }
         .cta-secondary { background: transparent; color: ${theme.textMuted}; border: 1px solid ${theme.border}; }
         .cta-secondary:hover { border-color: ${theme.accent}; color: ${theme.text}; }
 
         .edu-card {
           background: ${theme.bgCard}; border: 1px solid ${theme.border};
           border-radius: 12px; padding: 24px 28px; position: relative; overflow: hidden;
+          transition: all 0.3s ease;
         }
+        .edu-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px ${theme.shadow}; }
         .edu-card::before {
           content: ''; position: absolute; top: 0; ${isRtl ? "right" : "left"}: 0;
           width: 3px; height: 100%; background: ${theme.accent};
@@ -449,6 +659,13 @@ export default function Portfolio() {
         }
         .social-btn:hover { border-color: ${theme.accent}; color: ${theme.text}; transform: translateY(-2px); }
 
+        .project-dot {
+          transition: all 0.3s;
+        }
+        .card:hover .project-dot {
+          transform: scale(1.5);
+        }
+
         @media (max-width: 768px) { .hero-glow { width: 300px; height: 300px; } .hide-mobile { display: none !important; } }
       `}</style>
 
@@ -471,7 +688,6 @@ export default function Portfolio() {
           </span>
 
           <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-            {/* Nav links */}
             <div className="hide-mobile" style={{ display: "flex", gap: 28, alignItems: "center" }}>
               {i.nav.map((label, idx) => (
                 <span key={idx} onClick={() => scrollTo(idx)} style={{
@@ -484,7 +700,6 @@ export default function Portfolio() {
               ))}
             </div>
 
-            {/* Theme toggle */}
             <button className="toggle-btn" onClick={() => setMode(m => m === "dark" ? "light" : "dark")} title="Toggle theme">
               {mode === "dark" ? (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -497,7 +712,6 @@ export default function Portfolio() {
               )}
             </button>
 
-            {/* Language switcher */}
             <div style={{ position: "relative" }}>
               <button className="toggle-btn" onClick={(e) => { e.stopPropagation(); setLangMenuOpen(o => !o); }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -554,18 +768,11 @@ export default function Portfolio() {
       <Section id="about">
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px" }}>
           <SectionLabel text={i.aboutLabel} theme={theme} />
-          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 20, letterSpacing: "-0.02em", whiteSpace: "pre-line" }}>{i.aboutTitle}</h2>
+          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 20, letterSpacing: "-0.02em", whiteSpace: "pre-line", color: mode === "dark" ? "#e0e7ff" : "#1e1b4b" }}>{i.aboutTitle}</h2>
           <div style={{ color: theme.textMuted, lineHeight: 1.8, fontSize: "1rem", display: "flex", flexDirection: "column", gap: 16 }}>
             <p>{i.aboutP1}</p><p>{i.aboutP2}</p><p>{i.aboutP3}</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginTop: 36, paddingTop: 36, borderTop: `1px solid ${theme.border}` }}>
-            {i.stats.map((s, idx) => (
-              <div key={idx} style={{ textAlign: "center" }}>
-                <p style={{ fontSize: "1.6rem", fontWeight: 700, color: theme.accent, fontFamily: "'JetBrains Mono', monospace" }}>{s.num}</p>
-                <p style={{ fontSize: "0.78rem", color: theme.textFaint, marginTop: 4 }}>{s.label}</p>
-              </div>
-            ))}
-          </div>
+          <AnimatedStats stats={i.stats} theme={theme} />
         </div>
       </Section>
 
@@ -573,10 +780,10 @@ export default function Portfolio() {
       <Section id="experience">
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px" }}>
           <SectionLabel text={i.expLabel} theme={theme} />
-          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em" }}>{i.expTitle}</h2>
+          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em", color: mode === "dark" ? "#e0e7ff" : "#1e1b4b" }}>{i.expTitle}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {i.experience.map((exp, idx) => (
-              <div key={idx} className="card" style={{ position: "relative", overflow: "hidden" }}>
+              <div key={idx} className="card">
                 <div style={{ position: "absolute", top: 0, [isRtl ? "right" : "left"]: 0, width: "100%", height: 2, background: `linear-gradient(${isRtl ? "270deg" : "90deg"}, ${theme.accent}, #6366f1, transparent)` }} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
                   <div>
@@ -606,14 +813,12 @@ export default function Portfolio() {
       <Section id="skills">
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px" }}>
           <SectionLabel text={i.skillsLabel} theme={theme} />
-          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em" }}>{i.skillsTitle}</h2>
+          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em", color: mode === "dark" ? "#e0e7ff" : "#1e1b4b" }}>{i.skillsTitle}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
             {Object.entries(SKILLS).map(([cat, items]) => (
               <div key={cat}>
                 <p style={{ fontSize: "0.8rem", color: theme.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10, fontWeight: 500 }}>{cat}</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {items.map(s => <span key={s} className="skill-chip">{s}</span>)}
-                </div>
+                <AnimatedSkills items={items} theme={theme} />
               </div>
             ))}
           </div>
@@ -624,12 +829,12 @@ export default function Portfolio() {
       <Section id="projects">
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px" }}>
           <SectionLabel text={i.projectsLabel} theme={theme} />
-          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em" }}>{i.projectsTitle}</h2>
+          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em", color: mode === "dark" ? "#e0e7ff" : "#1e1b4b" }}>{i.projectsTitle}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {i.projects.map((p, idx) => (
               <div key={idx} className="card">
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: p.color, boxShadow: `0 0 12px ${p.color}60` }} />
+                  <div className="project-dot" style={{ width: 10, height: 10, borderRadius: "50%", background: p.color, boxShadow: `0 0 12px ${p.color}60` }} />
                   <h3 style={{ fontSize: "1.15rem", fontWeight: 600 }}>{p.title}</h3>
                   <span style={{ fontSize: "0.72rem", color: theme.accent, background: theme.accentBg, padding: "3px 10px", borderRadius: 4, fontFamily: "'JetBrains Mono', monospace" }}>{p.tag}</span>
                 </div>
@@ -649,7 +854,7 @@ export default function Portfolio() {
       <Section id="education">
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px" }}>
           <SectionLabel text={i.eduLabel} theme={theme} />
-          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em" }}>{i.eduTitle}</h2>
+          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 36, letterSpacing: "-0.02em", color: mode === "dark" ? "#e0e7ff" : "#1e1b4b" }}>{i.eduTitle}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {i.education.map((e, idx) => (
               <div key={idx} className="edu-card">
@@ -667,7 +872,7 @@ export default function Portfolio() {
       <Section id="contact">
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "80px 24px 120px", textAlign: "center" }}>
           <SectionLabel text={i.contactLabel} theme={theme} />
-          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 16, letterSpacing: "-0.02em" }}>{i.contactTitle}</h2>
+          <h2 style={{ fontSize: "1.8rem", fontWeight: 600, marginBottom: 16, letterSpacing: "-0.02em", color: mode === "dark" ? "#e0e7ff" : "#1e1b4b" }}>{i.contactTitle}</h2>
           <p style={{ color: theme.textDim, fontSize: "1rem", lineHeight: 1.7, maxWidth: 620, margin: "0 auto 36px" }}>{i.contactDesc}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, maxWidth: 700, margin: "0 auto 36px", textAlign: isRtl ? "right" : "left" }}>
             {[
